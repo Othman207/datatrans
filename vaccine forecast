@@ -1,0 +1,60 @@
+import pandas as pd
+import numpy as np
+
+# Create dictionary for calculating annual forecast of vaccines and product volumes
+data_dict = {'Vaccines':['BCG','DTP-HepB-Hib','IPV', 'Measles', 'Rota_liq_frozen', 'Td','bOPV','PCV-10', 'HepB','YF','Men_A'],
+             'Schedule':[1,3,2,1,3,2,4,3,1,1,1,],
+             'Target (%)':[4,3.8,3.8,3.8,3.8,5,4,3.8,4,3.8,3.8],
+             'Coverage':[0.89,0.85,0.73,0.87,0.74,0.75,0.78,0.85,0.72,0.83,0.83],
+             'Vaccine Presentation':[20,10,10,10,5,10,20,4,10,10,10],
+             'Vaccine wastage (%)':[0.70,0.25,0.20,0.40,0.30,0.25,0.25,0.10,0.25,0.40,0.30],
+             'Number of Supply Interval':[12,12,12,12,12,12,12,12,12,12,12],
+             'Packed Vaccine Volume per dose cm3':[4,11,6.2,4.4,18.1,8,6,8,5.9,6,3.7]}
+
+# Convert dictionary into dataframe
+dframe = pd.DataFrame(data_dict)
+
+# Import locations with their corresponding total population
+df = pd.read_csv('/Users/othman/Downloads/Kano Baseline and Scenario Analysis - to_csv.csv')
+
+# Use numpy tile to repeat rows for dframe in a new dataframe x to create an array y
+# Use same number of rows as dataframe in df i.e. 601
+x = dframe
+y= np.tile(x,(601,1))
+
+
+# Use numpy tile to repeat rows for df in a new dataframe m to create an array c.
+# Use same number of rows as dataframe in x i.e. 11
+m = df
+c= np.tile(m,(11,1))
+
+# Concatenate arrays y and c into a dataframe df1
+df1 = pd.DataFrame(np.hstack((c,y)))
+
+# Rename columns for df1
+df1.rename(columns={0:'State',1:'LGA',2:'Ward',3:'Health structures',4:'Total Population',5:'Vaccine',6:'Schedule',7:'Target',8:'Coverage',9:'Vaccine Presentation',10:'Wastage Rate',11:'Supply Interval',12:'Packed Vaccine Volume per Dose cm3'}, inplace=True)
+df2 = df1
+
+# Conversions to numeric values
+df2['Total Population'].replace(',','', regex=True, inplace=True)
+df2['Total Population'] = df2['Total Population'].apply(pd.to_numeric,errors='coerce')
+
+# df2['Wastage Rate'] = df2['Wastage Rate'].astype(int)
+# df2['Packed Vaccine Volume per Dose cm3'] = df2['Packed Vaccine Volume per Dose cm3'].astype(int)
+# df2['Coverage'] = df2['Coverage'].astype(int)
+# df2['Target'] = df2['Target'].astype(int)
+
+
+
+# Target population
+df2['Target Population'] = df2['Total Population'] * df2['Target']/100
+
+# Wastage Factor Calculation
+df2['Wastage Factor'] = 100/ (100-df2['Wastage Rate'])
+
+# Forecast calculation
+df2['Forecast'] = df2['Schedule'] * df2['Coverage'] * df2['Wastage Factor'] * df2['Target Population']
+
+# df1[['States', 'LGA', 'Ward', 'Health structures']] = df1[['States', 'LGA', 'Ward', 'Health structures']].astype(str)
+
+df2.to_csv("/Users/othman/Downloads/kn_dataframe.csv")
